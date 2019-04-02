@@ -90,7 +90,7 @@ version: '3.7'
 
 services:
   gochro:
-    image: github.com/FireFart/gochro
+    image: firefart/gochro
     container_name: gochro
     security_opt:
       - seccomp="chrome.json"
