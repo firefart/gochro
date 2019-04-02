@@ -1,5 +1,7 @@
 # gochro
 
+[![Build Status](https://travis-ci.org/FireFart/gochro.svg?branch=master)](https://travis-ci.org/FireFart/gochro)
+
 gochro is a small docker image with chromium installed and a golang based webserver to interact wit it. It can be used to take screenshots of websites using chromium-headless and convert HTML pages to PDF.
 
 If errors occur the error will be logged to stdout and a non information leaking error message is presented to the user.
@@ -77,6 +79,16 @@ To run it in deamon mode use the following command. This will launch everything 
 
 ```bash
 make docker-run-daemon
+```
+
+### Use the docker hub image
+
+You can also use the [prebuit image](https://hub.docker.com/r/firefart/gochro) from dockerhub.
+
+To pull the image run
+
+```bash
+docker pull firefart/gochro
 ```
 
 ### Include in docker-compose
