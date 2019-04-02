@@ -78,3 +78,27 @@ To run it in deamon mode use the following command. This will launch everything 
 ```bash
 make docker-run-daemon
 ```
+
+### Include in docker-compose
+
+If you want to include this image in a docker-compose file you can use the following example. Just connect the `gochronet` to the other service so the containers can communicate with each other.
+
+Please note that the `0.0.0.0` in the command only applies to the network inside the docker container itself. If you want to access it from your local machine you need to add a port mapping.
+
+```yml
+version: '3.7'
+
+services:
+  gochro:
+    image: github.com/FireFart/gochro
+    container_name: gochro
+    security_opt:
+      - seccomp="chrome.json"
+    command: -host 0.0.0.0:8000
+    networks:
+      - gochronet
+
+networks:
+  gochronet:
+    driver: bridge
+```
