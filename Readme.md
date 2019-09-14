@@ -43,7 +43,7 @@ Content-Length: 119
 
 To run this image you should use the [seccomp profile](https://github.com/jessfraz/dotfiles/blob/master/etc/docker/seccomp/chrome.json) provided by [Jess Frazelle](https://github.com/jessfraz). The privileges on the host are needed for chromiums internal security sandbox. You can also deactivate the sandbox on chromium (would require changes in `main.go`) but that's a bad idea and puts your server at risk, so please use the seccomp profile instead.
 
-I included all the necessary steps in the included Makefile to build and run everything
+I included all the necessary steps in the included Makefile to build and run everything. Be sure to use the --init switch to get rid of zombie processes of chromium.
 
 ### Only build the webserver for non docker use
 
@@ -103,6 +103,7 @@ version: '3.7'
 services:
   gochro:
     image: firefart/gochro
+    init: true
     container_name: gochro
     security_opt:
       - seccomp="chrome.json"
