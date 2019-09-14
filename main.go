@@ -115,6 +115,7 @@ func execChrome(ctxMain context.Context, action, url string, w, h int) ([]byte, 
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
+		killChromeProcessIfRunning(cmd)
 		return nil, fmt.Errorf("could not execute command %v: %s", err, stderr.String())
 	}
 
@@ -134,7 +135,17 @@ func execChrome(ctxMain context.Context, action, url string, w, h int) ([]byte, 
 		return nil, fmt.Errorf("could not read temp file %v", err)
 	}
 
+	killChromeProcessIfRunning(cmd)
+
 	return content, nil
+}
+
+func killChromeProcessIfRunning(cmd *exec.Cmd) {
+	if cmd.Process == nil {
+		return
+	}
+	cmd.Process.Release()
+	cmd.Process.Kill()
 }
 
 func (app *application) logError(w http.ResponseWriter, err error, withTrace bool) {
