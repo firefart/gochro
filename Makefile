@@ -1,8 +1,6 @@
 TARGET=./build
 ARCHS=amd64 386
 LDFLAGS="-s -w"
-GCFLAGS="all=-trimpath=$(shell pwd)"
-ASMFLAGS="all=-trimpath=$(shell pwd)"
 PROG=gochro
 
 .DEFAULT_GOAL := all
@@ -25,21 +23,21 @@ windows:
 	@mkdir -p ${TARGET} ; \
 	for GOARCH in ${ARCHS}; do \
 		echo "Building for windows $${GOARCH} ..." ; \
-		GOOS=windows GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${PROG}-windows-$${GOARCH}.exe ; \
+		GOOS=windows GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -trimpath -o ${TARGET}/${PROG}-windows-$${GOARCH}.exe ; \
 	done;
 
 linux:
 	@mkdir -p ${TARGET} ; \
 	for GOARCH in ${ARCHS}; do \
 		echo "Building for linux $${GOARCH} ..." ; \
-		GOOS=linux GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${PROG}-linux-$${GOARCH} ; \
+		GOOS=linux GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -trimpath -o ${TARGET}/${PROG}-linux-$${GOARCH} ; \
 	done;
 
 darwin:
 	@mkdir -p ${TARGET} ; \
 	for GOARCH in ${ARCHS}; do \
 		echo "Building for darwin $${GOARCH} ..." ; \
-		GOOS=darwin GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -gcflags=${GCFLAGS} -asmflags=${ASMFLAGS} -o ${TARGET}/${PROG}-darwin-$${GOARCH} ; \
+		GOOS=darwin GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -trimpath -o ${TARGET}/${PROG}-darwin-$${GOARCH} ; \
 	done;
 
 clean:
