@@ -101,6 +101,11 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		fmt.Sprintf("--window-size=%d,%d", w, h),
 	}
 
+	if debugOutput {
+		args = append(args, "--enable-logging")
+		args = append(args, "--v=1")
+	}
+
 	if ignoreCertErrors {
 		args = append(args, "--ignore-certificate-errors")
 	}
