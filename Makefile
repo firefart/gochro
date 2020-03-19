@@ -14,10 +14,10 @@ docker-update:
 	docker build --tag ${PROG}:dev .
 
 docker-run: docker-update
-	docker run --init --rm -p 8000:8000 --security-opt seccomp=chrome.json ${PROG}:dev -host 0.0.0.0:8000 -debug
+	docker run --init --rm -p 8000:8000 --security-opt seccomp=chrome.json ${PROG}:dev -host 0.0.0.0:8000 -debug -ignore-cert-errors
 
 docker-run-daemon: docker-update
-	docker run --init --rm -d -p 8000:8000 --security-opt seccomp=chrome.json ${PROG}:dev -host 0.0.0.0:8000
+	docker run --init --rm -d -p 8000:8000 --security-opt seccomp=chrome.json ${PROG}:dev -host 0.0.0.0:8000 -ignore-cert-errors
 
 windows:
 	@mkdir -p ${TARGET} ; \

@@ -26,6 +26,7 @@ const (
 var (
 	debugOutput      = false
 	ignoreCertErrors = false
+	proxyServer      = ""
 )
 
 type application struct {
@@ -49,6 +50,7 @@ func main() {
 	flag.StringVar(&host, "host", "127.0.0.1:8080", "IP and Port to bind to")
 	flag.BoolVar(&ignoreCertErrors, "ignore-cert-errors", false, "Ignore Certificate Errors when taking screenshots of fetching ressources")
 	flag.BoolVar(&debugOutput, "debug", false, "Enable DEBUG mode")
+	flag.StringVar(&proxyServer, "proxy", "", "Proxy Server to use for chromium. Please use format IP:PORT without a protocol.")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime)
@@ -101,6 +103,10 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 
 	if ignoreCertErrors {
 		args = append(args, "--ignore-certificate-errors")
+	}
+
+	if proxyServer != "" {
+		args = append(args, fmt.Sprintf("--proxy-server=%s", proxyServer))
 	}
 
 	switch action {

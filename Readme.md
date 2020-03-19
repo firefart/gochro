@@ -50,6 +50,7 @@ I included all the necessary steps in the included Makefile to build and run eve
 -host                  The host and port to listen of (refers to inside the container). Defaults to 0.0.0.0:8000
 -debug                 Enables debug output. Default: false
 -ignore-cert-errors    Also fetch ressources from origins with untrusted certificates or cert errors.
+-proxy                 Use a proxy server to connect to the internet. Please use format IP:PORT without a protocol. Example: 1.2.3.4:3128
 ```
 
 ### Only build the webserver for non docker use
