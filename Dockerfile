@@ -9,7 +9,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -o gochro -ldflags="-s -w" -gcflags="al
 FROM alpine:latest
 
 RUN apk add --no-cache chromium \
-    && rm -rf /var/cache/*
+    && rm -rf /var/cache/apk \
+    && mkdir -p /var/cache/apk
 
 RUN mkdir -p /app \
     && adduser -D chrome \

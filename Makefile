@@ -14,9 +14,6 @@ docker-update:
 	docker build --tag ${PROG}:dev .
 
 docker-run: docker-update
-	docker run --init --rm -p 8000:8000 --security-opt seccomp=chrome.json ${PROG}:dev -host 0.0.0.0:8000
-
-docker-run-debug: docker-update
 	docker run --init --rm -p 8000:8000 --security-opt seccomp=chrome.json ${PROG}:dev -host 0.0.0.0:8000 -debug
 
 docker-run-daemon: docker-update

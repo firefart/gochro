@@ -45,6 +45,13 @@ To run this image you should use the [seccomp profile](https://github.com/jessfr
 
 I included all the necessary steps in the included Makefile to build and run everything. Be sure to use the --init switch to get rid of zombie processes of chromium.
 
+### Command Line Options
+```text
+-host                  The host and port to listen of (refers to inside the container). Defaults to 0.0.0.0:8000
+-debug                 Enables debug output. Default: false
+-ignore-cert-errors    Also fetch ressources from origins with untrusted certificates or cert errors.
+```
+
 ### Only build the webserver for non docker use
 
 The following command builds the webserver for non docker use inside the `build` directory

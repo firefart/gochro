@@ -24,7 +24,8 @@ const (
 )
 
 var (
-	debugOutput = false
+	debugOutput      = false
+	ignoreCertErrors = false
 )
 
 type application struct {
@@ -46,6 +47,7 @@ func randStringRunes(n int) string {
 func main() {
 	var host string
 	flag.StringVar(&host, "host", "127.0.0.1:8080", "IP and Port to bind to")
+	flag.BoolVar(&ignoreCertErrors, "ignore-cert-errors", false, "Ignore Certificate Errors when taking screenshots of fetching ressources")
 	flag.BoolVar(&debugOutput, "debug", false, "Enable DEBUG mode")
 	flag.Parse()
 
@@ -97,6 +99,10 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		fmt.Sprintf("--window-size=%d,%d", w, h),
 	}
 
+	if ignoreCertErrors {
+		args = append(args, "--ignore-certificate-errors")
+	}
+
 	switch action {
 	case "screenshot":
 		args = append(args, "--screenshot")
@@ -118,6 +124,10 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 
 	ctx, cancel := context.WithTimeout(ctxMain, 1*time.Minute)
 	defer cancel()
+
+	if debugOutput {
+		app.debugLog.Printf("going to call chromium with the following args: %v", args)
+	}
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
