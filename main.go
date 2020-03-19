@@ -23,9 +23,14 @@ const (
 	chromiumPath = "/usr/bin/chromium-browser"
 )
 
+var (
+	debugOutput = false
+)
+
 type application struct {
 	infoLog  *log.Logger
 	errorLog *log.Logger
+	debugLog *log.Logger
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -39,23 +44,30 @@ func randStringRunes(n int) string {
 }
 
 func main() {
-	host := flag.String("host", "127.0.0.1:8080", "IP and Port to bind to")
+	var host string
+	flag.StringVar(&host, "host", "127.0.0.1:8080", "IP and Port to bind to")
+	flag.BoolVar(&debugOutput, "debug", false, "Enable DEBUG mode")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "[ERROR]\t", log.Ldate|log.Ltime|log.Lshortfile)
+	debugLog := log.New(os.Stdout, "[DEBUG]\t", log.Ldate|log.Ltime)
 
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		debugLog: debugLog,
 	}
 
 	srv := &http.Server{
-		Addr:     *host,
+		Addr:     host,
 		ErrorLog: errorLog,
 		Handler:  app.routes(),
 	}
-	app.infoLog.Printf("Starting server on %s", *host)
+	app.infoLog.Printf("Starting server on %s", host)
+	if debugOutput {
+		app.debugLog.Print("DEBUG mode enabled")
+	}
 	app.errorLog.Fatal(srv.ListenAndServe())
 }
 
@@ -66,15 +78,15 @@ func (app *application) routes() http.Handler {
 	return app.recoverPanic(app.logRequest(mux))
 }
 
-func toImage(ctx context.Context, url string, w, h int) ([]byte, error) {
-	return execChrome(ctx, "screenshot", url, w, h)
+func (app *application) toImage(ctx context.Context, url string, w, h int) ([]byte, error) {
+	return app.execChrome(ctx, "screenshot", url, w, h)
 }
 
-func toPDF(ctx context.Context, url string, w, h int) ([]byte, error) {
-	return execChrome(ctx, "pdf", url, w, h)
+func (app *application) toPDF(ctx context.Context, url string, w, h int) ([]byte, error) {
+	return app.execChrome(ctx, "pdf", url, w, h)
 }
 
-func execChrome(ctxMain context.Context, action, url string, w, h int) ([]byte, error) {
+func (app *application) execChrome(ctxMain context.Context, action, url string, w, h int) ([]byte, error) {
 	args := []string{
 		"--headless",
 		"--disable-gpu",
@@ -117,6 +129,13 @@ func execChrome(ctxMain context.Context, action, url string, w, h int) ([]byte, 
 	if err != nil {
 		killChromeProcessIfRunning(cmd)
 		return nil, fmt.Errorf("could not execute command %v: %s", err, stderr.String())
+	}
+
+	if debugOutput {
+		app.debugLog.Print("#######################")
+		app.debugLog.Printf("STDOUT: %s", out.String())
+		app.debugLog.Printf("STDERR: %s", stderr.String())
+		app.debugLog.Print("#######################")
 	}
 
 	var outfile string
@@ -233,7 +252,7 @@ func (app *application) screenshot(r *http.Request) (string, []byte, error) {
 		return "", nil, err
 	}
 
-	content, err := toImage(r.Context(), url, w, h)
+	content, err := app.toImage(r.Context(), url, w, h)
 	if err != nil {
 		return "", nil, err
 	}
@@ -277,7 +296,7 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 		return "", nil, fmt.Errorf("could not get temp file path: %v", err)
 	}
 
-	content, err := toPDF(r.Context(), path, w, h)
+	content, err := app.toPDF(r.Context(), path, w, h)
 	if err != nil {
 		return "", nil, err
 	}
