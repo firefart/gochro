@@ -20,9 +20,3 @@ jobs:
           docker tag gochro:latest docker.pkg.github.com/firefart/gochro/gochro:latest
           echo -n ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u firefart --password-stdin
           docker push docker.pkg.github.com/firefart/gochro/gochro:latest
-
-      - name: Remove old gochro packages
-        uses: actions/delete-package-versions@v1
-        with:
-          package-name: "gochro"
-          num-old-versions-to-delete: 1
