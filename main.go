@@ -32,6 +32,7 @@ var (
 	debugOutput      = false
 	ignoreCertErrors = false
 	proxyServer      = ""
+	disableSandbox   = false
 )
 
 type application struct {
@@ -54,8 +55,9 @@ func main() {
 	var host string
 	var wait time.Duration
 	flag.StringVar(&host, "host", "127.0.0.1:8080", "IP and Port to bind to")
-	flag.BoolVar(&ignoreCertErrors, "ignore-cert-errors", false, "Ignore Certificate Errors when taking screenshots of fetching ressources")
+	flag.BoolVar(&ignoreCertErrors, "ignore-cert-errors", true, "Ignore Certificate Errors when taking screenshots of fetching ressources")
 	flag.BoolVar(&debugOutput, "debug", false, "Enable DEBUG mode")
+	flag.BoolVar(&disableSandbox, "disable-sandbox", false, "Disable chromium sandbox")
 	flag.StringVar(&proxyServer, "proxy", "", "Proxy Server to use for chromium. Please use format IP:PORT without a protocol.")
 	flag.DurationVar(&wait, "graceful-timeout", time.Second*5, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.Parse()
@@ -144,6 +146,10 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 
 	if ignoreCertErrors {
 		args = append(args, "--ignore-certificate-errors")
+	}
+
+	if disableSandbox {
+		args = append(args, "--no-sandbox")
 	}
 
 	if proxyServer != "" {
