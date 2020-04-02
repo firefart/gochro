@@ -12,11 +12,16 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
+	"syscall"
 	"time"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -47,10 +52,12 @@ func randStringRunes(n int) string {
 
 func main() {
 	var host string
+	var wait time.Duration
 	flag.StringVar(&host, "host", "127.0.0.1:8080", "IP and Port to bind to")
 	flag.BoolVar(&ignoreCertErrors, "ignore-cert-errors", false, "Ignore Certificate Errors when taking screenshots of fetching ressources")
 	flag.BoolVar(&debugOutput, "debug", false, "Enable DEBUG mode")
 	flag.StringVar(&proxyServer, "proxy", "", "Proxy Server to use for chromium. Please use format IP:PORT without a protocol.")
+	flag.DurationVar(&wait, "graceful-timeout", time.Second*5, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime)
@@ -72,14 +79,43 @@ func main() {
 	if debugOutput {
 		app.debugLog.Print("DEBUG mode enabled")
 	}
-	app.errorLog.Fatal(srv.ListenAndServe())
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT)
+	signal.Notify(c, syscall.SIGTERM)
+	<-c
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	srv.Shutdown(ctx)
+	app.infoLog.Println("shutting down")
+	os.Exit(0)
 }
 
 func (app *application) routes() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/screenshot", app.errorHandler(app.screenshot))
-	mux.HandleFunc("/html2pdf", app.errorHandler(app.html2pdf))
-	return app.recoverPanic(app.logRequest(mux))
+	r := mux.NewRouter()
+	r.Use(app.loggingMiddleware)
+	r.Use(app.recoverPanic)
+	r.HandleFunc("/screenshot", app.errorHandler(app.screenshot))
+	r.HandleFunc("/html2pdf", app.errorHandler(app.html2pdf))
+	r.PathPrefix("/products/")
+	r.PathPrefix("/").HandlerFunc(app.catchAllHandler)
+	return r
+}
+
+func (app *application) catchAllHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Connection", "close")
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte("Not found"))
+}
+
+func (app *application) loggingMiddleware(next http.Handler) http.Handler {
+	return handlers.CombinedLoggingHandler(os.Stdout, next)
 }
 
 func (app *application) toImage(ctx context.Context, url string, w, h int) ([]byte, error) {
