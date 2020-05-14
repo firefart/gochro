@@ -170,7 +170,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	tmpdir := path.Join(os.TempDir(), fmt.Sprintf("chrome_%s", randStringRunes(10))) // nolint:gomnd
 	err := os.Mkdir(tmpdir, os.ModePerm)
 	if err != nil {
-		return nil, fmt.Errorf("could not create dir %q %v", tmpdir, err)
+		return nil, fmt.Errorf("could not create dir %q: %w", tmpdir, err)
 	}
 	defer os.RemoveAll(tmpdir)
 
@@ -188,7 +188,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	err = cmd.Run()
 	if err != nil {
 		killChromeProcessIfRunning(cmd)
-		return nil, fmt.Errorf("could not execute command %v: %s", err, stderr.String())
+		return nil, fmt.Errorf("could not execute command %w: %s", err, stderr.String())
 	}
 
 	log.Debugf("STDOUT: %s", out.String())
@@ -207,7 +207,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 
 	content, err := ioutil.ReadFile(outfile)
 	if err != nil {
-		return nil, fmt.Errorf("could not read temp file %v", err)
+		return nil, fmt.Errorf("could not read temp file: %w", err)
 	}
 
 	killChromeProcessIfRunning(cmd)
@@ -282,7 +282,7 @@ func getIntParameter(r *http.Request, paramname string) (int, error) {
 
 	i, err := strconv.Atoi(p[0])
 	if err != nil {
-		return 0, fmt.Errorf("invalid parameter %s=%q - %v", paramname, p, err)
+		return 0, fmt.Errorf("invalid parameter %s=%q - %w", paramname, p, err)
 	} else if i < 1 {
 		return 0, fmt.Errorf("invalid parameter %s: %q", paramname, p)
 	}
@@ -329,13 +329,13 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 
 	tmpf, err := ioutil.TempFile("", "pdf.*.html")
 	if err != nil {
-		return "", nil, fmt.Errorf("could not create tmp file: %v", err)
+		return "", nil, fmt.Errorf("could not create tmp file: %w", err)
 	}
 	defer os.Remove(tmpf.Name())
 
 	bytes, err := io.Copy(tmpf, r.Body)
 	if err != nil {
-		return "", nil, fmt.Errorf("could not copy request: %v", err)
+		return "", nil, fmt.Errorf("could not copy request: %w", err)
 	}
 	if bytes <= 0 {
 		return "", nil, fmt.Errorf("please provide a valid post body")
@@ -343,12 +343,12 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 
 	err = tmpf.Close()
 	if err != nil {
-		return "", nil, fmt.Errorf("could not close tmp file: %v", err)
+		return "", nil, fmt.Errorf("could not close tmp file: %w", err)
 	}
 
 	path, err := filepath.Abs(tmpf.Name())
 	if err != nil {
-		return "", nil, fmt.Errorf("could not get temp file path: %v", err)
+		return "", nil, fmt.Errorf("could not get temp file path: %w", err)
 	}
 
 	content, err := app.toPDF(r.Context(), path, w, h)
