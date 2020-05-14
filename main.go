@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -22,24 +21,22 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
-	chromiumPath = "/usr/bin/chromium-browser"
+	chromiumPath           = "/usr/bin/chromium-browser"
+	defaultGracefulTimeout = 5 * time.Second
 )
 
 var (
 	debugOutput      = false
-	ignoreCertErrors = false
+	ignoreCertErrors = true
 	proxyServer      = ""
 	disableSandbox   = false
 )
 
-type application struct {
-	infoLog  *log.Logger
-	errorLog *log.Logger
-	debugLog *log.Logger
-}
+type application struct{}
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -59,32 +56,30 @@ func main() {
 	flag.BoolVar(&debugOutput, "debug", false, "Enable DEBUG mode")
 	flag.BoolVar(&disableSandbox, "disable-sandbox", false, "Disable chromium sandbox")
 	flag.StringVar(&proxyServer, "proxy", "", "Proxy Server to use for chromium. Please use format IP:PORT without a protocol.")
-	flag.DurationVar(&wait, "graceful-timeout", time.Second*5, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	flag.DurationVar(&wait, "graceful-timeout", defaultGracefulTimeout, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	flag.Parse()
 
-	infoLog := log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime)
-	errorLog := log.New(os.Stderr, "[ERROR]\t", log.Ldate|log.Ltime|log.Lshortfile)
-	debugLog := log.New(os.Stdout, "[DEBUG]\t", log.Ldate|log.Ltime)
-
-	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		debugLog: debugLog,
+	log.SetOutput(os.Stdout)
+	if debugOutput {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
 	}
+
+	app := &application{}
 
 	srv := &http.Server{
-		Addr:     host,
-		ErrorLog: errorLog,
-		Handler:  app.routes(),
+		Addr:    host,
+		Handler: app.routes(),
 	}
-	app.infoLog.Printf("Starting server on %s", host)
+	log.Infof("Starting server on %s", host)
 	if debugOutput {
-		app.debugLog.Print("DEBUG mode enabled")
+		log.Debug("DEBUG mode enabled")
 	}
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Println(err)
+			log.Error(err)
 		}
 	}()
 
@@ -94,8 +89,10 @@ func main() {
 	<-c
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
-	srv.Shutdown(ctx)
-	app.infoLog.Println("shutting down")
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	}
+	log.Info("shutting down")
 	os.Exit(0)
 }
 
@@ -113,7 +110,9 @@ func (app *application) routes() http.Handler {
 func (app *application) catchAllHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "close")
 	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte("Not found"))
+	if _, err := w.Write([]byte("Not found")); err != nil {
+		log.Error(err)
+	}
 }
 
 func (app *application) loggingMiddleware(next http.Handler) http.Handler {
@@ -168,7 +167,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	// last parameter is the url
 	args = append(args, url)
 
-	tmpdir := path.Join(os.TempDir(), fmt.Sprintf("chrome_%s", randStringRunes(10)))
+	tmpdir := path.Join(os.TempDir(), fmt.Sprintf("chrome_%s", randStringRunes(10))) // nolint:gomnd
 	err := os.Mkdir(tmpdir, os.ModePerm)
 	if err != nil {
 		return nil, fmt.Errorf("could not create dir %q %v", tmpdir, err)
@@ -178,9 +177,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	ctx, cancel := context.WithTimeout(ctxMain, 1*time.Minute)
 	defer cancel()
 
-	if debugOutput {
-		app.debugLog.Printf("going to call chromium with the following args: %v", args)
-	}
+	log.Debugf("going to call chromium with the following args: %v", args)
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -194,12 +191,8 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		return nil, fmt.Errorf("could not execute command %v: %s", err, stderr.String())
 	}
 
-	if debugOutput {
-		app.debugLog.Print("#######################")
-		app.debugLog.Printf("STDOUT: %s", out.String())
-		app.debugLog.Printf("STDERR: %s", stderr.String())
-		app.debugLog.Print("#######################")
-	}
+	log.Debugf("STDOUT: %s", out.String())
+	log.Debugf("STDERR: %s", stderr.String())
 
 	var outfile string
 
@@ -226,25 +219,24 @@ func killChromeProcessIfRunning(cmd *exec.Cmd) {
 	if cmd.Process == nil {
 		return
 	}
-	cmd.Process.Release()
-	cmd.Process.Kill()
+	if err := cmd.Process.Release(); err != nil {
+		log.Error(err)
+		return
+	}
+	if err := cmd.Process.Kill(); err != nil {
+		log.Error(err)
+		return
+	}
 }
 
 func (app *application) logError(w http.ResponseWriter, err error, withTrace bool) {
 	w.Header().Set("Connection", "close")
 	errorText := fmt.Sprintf("%v", err)
-	app.errorLog.Println(errorText)
+	log.Error(errorText)
 	if withTrace {
-		app.errorLog.Printf("%s", debug.Stack())
+		log.Errorf("%s", debug.Stack())
 	}
 	http.Error(w, "There was an error processing your request", http.StatusInternalServerError)
-}
-
-func (app *application) logRequest(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		app.infoLog.Printf("%s - %s %s %s", r.RemoteAddr, r.Proto, r.Method, r.URL.RequestURI())
-		next.ServeHTTP(w, r)
-	})
 }
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {

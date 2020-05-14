@@ -3,9 +3,9 @@ ARCHS=amd64 386
 LDFLAGS="-s -w"
 PROG=gochro
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := build
 
-all: clean windows linux darwin
+all: clean update lint windows linux darwin
 
 docker-update:
 	wget https://raw.githubusercontent.com/jessfraz/dotfiles/master/etc/docker/seccomp/chrome.json -O ./chrome.json
@@ -42,3 +42,19 @@ darwin:
 
 clean:
 	@rm -rf ${TARGET}/*
+
+lint:
+	@if [ ! -f "$$(go env GOPATH)/bin/golangci-lint" ]; then \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.26.0; \
+	fi
+	"$$(go env GOPATH)/bin/golangci-lint" run ./...
+	go mod tidy
+
+update:
+	go get -u
+	go mod tidy -v
+	go fmt ./...
+	go vet ./...
+
+build:
+	go build -o gochro
