@@ -89,7 +89,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 	log.Info("shutting down")
 	os.Exit(0)
