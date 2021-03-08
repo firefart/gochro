@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -205,7 +204,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		return nil, fmt.Errorf("unknown action %q", action)
 	}
 
-	content, err := ioutil.ReadFile(outfile)
+	content, err := os.ReadFile(outfile)
 	if err != nil {
 		return nil, fmt.Errorf("could not read temp file: %w", err)
 	}
@@ -327,7 +326,7 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 		return "", nil, err
 	}
 
-	tmpf, err := ioutil.TempFile("", "pdf.*.html")
+	tmpf, err := os.CreateTemp("", "pdf.*.html")
 	if err != nil {
 		return "", nil, fmt.Errorf("could not create tmp file: %w", err)
 	}
