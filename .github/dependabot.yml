@@ -7,9 +7,8 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
-    target-branch: "dev"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "github-actions"
     directory: "/"
