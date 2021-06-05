@@ -1,7 +1,7 @@
 FROM golang:latest AS build-env
 WORKDIR /src
 ENV CGO_ENABLED=0
-COPY go.mod /src/
+COPY go.* /src/
 RUN go mod download
 COPY main.go .
 RUN go build -a -o gochro -ldflags="-s -w" -trimpath
