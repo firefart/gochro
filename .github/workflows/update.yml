@@ -28,7 +28,7 @@ jobs:
           git config user.name "Github"
           git config user.email "<>"
 
-      - name: commit changes to dev branch
+      - name: commit changes
         # need to override the default shell so we can check
         # for error codes. Otherwise it will always fail if
         # one command returns an error code other than 0
