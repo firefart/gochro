@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: checkout sources
-        uses: actions/checkout@v2.3.5
+        uses: actions/checkout@v2.4.0
 
       - name: Build Sources
         run: |
