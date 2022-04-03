@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"strconv"
 	"syscall"
@@ -59,10 +60,9 @@ func main() {
 	flag.Parse()
 
 	log.SetOutput(os.Stdout)
+	log.SetLevel(log.InfoLevel)
 	if debugOutput {
 		log.SetLevel(log.DebugLevel)
-	} else {
-		log.SetLevel(log.InfoLevel)
 	}
 
 	app := &application{}
@@ -74,6 +74,19 @@ func main() {
 	log.Infof("Starting server on %s", host)
 	if debugOutput {
 		log.Debug("DEBUG mode enabled")
+	}
+
+	// print number of goroutines in debug mode
+	if debugOutput {
+		go func() {
+			goRoutineTicker := time.NewTicker(3 * time.Second)
+			for {
+				select {
+				case <-goRoutineTicker.C:
+					log.Debugf("number of goroutines: %d", runtime.NumGoroutine())
+				}
+			}
+		}()
 	}
 
 	go func() {
@@ -100,7 +113,6 @@ func (app *application) routes() http.Handler {
 	r.Use(app.recoverPanic)
 	r.HandleFunc("/screenshot", app.errorHandler(app.screenshot))
 	r.HandleFunc("/html2pdf", app.errorHandler(app.html2pdf))
-	r.PathPrefix("/products/")
 	r.PathPrefix("/").HandlerFunc(app.catchAllHandler)
 	return r
 }

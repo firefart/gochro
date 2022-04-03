@@ -1,6 +1,6 @@
 module github.com/FireFart/gochro
 
-go 1.17
+go 1.18
 
 require (
 	github.com/gorilla/handlers v1.5.1
@@ -10,5 +10,5 @@ require (
 
 require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/sys v0.0.0-20220403020550-483a9cbc67c0 // indirect
 )
