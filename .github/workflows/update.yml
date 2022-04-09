@@ -41,5 +41,5 @@ jobs:
           else
             git add go.mod go.sum
             git commit -m "auto update from github actions"
-            git push origin master
+            git push origin main
           fi
