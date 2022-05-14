@@ -80,11 +80,8 @@ func main() {
 	if debugOutput {
 		go func() {
 			goRoutineTicker := time.NewTicker(3 * time.Second)
-			for {
-				select {
-				case <-goRoutineTicker.C:
-					log.Debugf("number of goroutines: %d", runtime.NumGoroutine())
-				}
+			for range goRoutineTicker.C {
+				log.Debugf("number of goroutines: %d", runtime.NumGoroutine())
 			}
 		}()
 	}
