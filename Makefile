@@ -1,12 +1,9 @@
-TARGET=./build
-ARCHS=amd64 386
-LDFLAGS="-s -w"
 PROG=gochro
 
 .DEFAULT_GOAL := build
 
 .PHONY: all
-all: clean update lint windows linux darwin
+all: update lint build
 
 .PHONY: docker-update
 docker-update:
@@ -23,34 +20,6 @@ docker-run: docker-update
 docker-run-daemon: docker-update
 	docker run --init --rm -d -p 8000:8000 --security-opt seccomp=chrome.json ${PROG}:dev -host 0.0.0.0:8000 -ignore-cert-errors
 
-.PHONY: windows
-windows:
-	@mkdir -p ${TARGET} ; \
-	for GOARCH in ${ARCHS}; do \
-		echo "Building for windows $${GOARCH} ..." ; \
-		GOOS=windows GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -trimpath -o ${TARGET}/${PROG}-windows-$${GOARCH}.exe ; \
-	done;
-
-.PHONY: linux
-linux:
-	@mkdir -p ${TARGET} ; \
-	for GOARCH in ${ARCHS}; do \
-		echo "Building for linux $${GOARCH} ..." ; \
-		GOOS=linux GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -trimpath -o ${TARGET}/${PROG}-linux-$${GOARCH} ; \
-	done;
-
-.PHONY: darwin
-darwin:
-	@mkdir -p ${TARGET} ; \
-	for GOARCH in ${ARCHS}; do \
-		echo "Building for darwin $${GOARCH} ..." ; \
-		GOOS=darwin GOARCH=$${GOARCH} go build -ldflags=${LDFLAGS} -trimpath -o ${TARGET}/${PROG}-darwin-$${GOARCH} ; \
-	done;
-
-.PHONY: clean
-clean:
-	@rm -rf ${TARGET}/*
-
 .PHONY: lint
 lint:
 	"$$(go env GOPATH)/bin/golangci-lint" run ./...
@@ -65,9 +34,17 @@ lint-update:
 update:
 	go get -u
 	go mod tidy -v
-	go fmt ./...
-	go vet ./...
 
 .PHONY: build
 build:
+	go fmt ./...
+	go vet ./...
 	go build -o gochro
+
+.PHONY: test
+test:
+	go test -race -cover ./...
+
+.PHONY: run
+run: build
+	 ./gochro -host 0.0.0.0:8000 -debug -ignore-cert-errors

@@ -126,15 +126,15 @@ func (app *application) loggingMiddleware(next http.Handler) http.Handler {
 	return handlers.CombinedLoggingHandler(os.Stdout, next)
 }
 
-func (app *application) toImage(ctx context.Context, url string, w, h int) ([]byte, error) {
-	return app.execChrome(ctx, "screenshot", url, w, h)
+func (app *application) toImage(ctx context.Context, url string, w, h *int, userAgent *string) ([]byte, error) {
+	return app.execChrome(ctx, "screenshot", url, w, h, userAgent)
 }
 
-func (app *application) toPDF(ctx context.Context, url string, w, h int) ([]byte, error) {
-	return app.execChrome(ctx, "pdf", url, w, h)
+func (app *application) toPDF(ctx context.Context, url string, w, h *int, userAgent *string) ([]byte, error) {
+	return app.execChrome(ctx, "pdf", url, w, h, userAgent)
 }
 
-func (app *application) execChrome(ctxMain context.Context, action, url string, w, h int) ([]byte, error) {
+func (app *application) execChrome(ctxMain context.Context, action, url string, w, h *int, userAgent *string) ([]byte, error) {
 	args := []string{
 		"--headless",
 		"--disable-gpu",
@@ -142,7 +142,10 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		"--timeout=55000", // 55 secs, context timeout is 1 minute
 		"--disable-dev-shm-usage",
 		"--hide-scrollbars",
-		fmt.Sprintf("--window-size=%d,%d", w, h),
+	}
+
+	if w != nil && *w > 0 && h != nil && *h > 0 {
+		args = append(args, fmt.Sprintf("--window-size=%d,%d", *w, *h))
 	}
 
 	if debugOutput {
@@ -160,6 +163,10 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 
 	if proxyServer != "" {
 		args = append(args, fmt.Sprintf("--proxy-server=%s", proxyServer))
+	}
+
+	if userAgent != nil && len(*userAgent) > 0 {
+		args = append(args, fmt.Sprintf("--user-agent=%s", *userAgent))
 	}
 
 	switch action {
@@ -273,37 +280,39 @@ func (app *application) errorHandler(h func(*http.Request) (string, []byte, erro
 	}
 }
 
-func getStringParameter(r *http.Request, paramname string) (string, error) {
+func getStringParameter(r *http.Request, paramname string) *string {
 	p, ok := r.URL.Query()[paramname]
 	if !ok || len(p[0]) < 1 {
-		return "", fmt.Errorf("missing parameter %s", paramname)
+		return nil
 	}
-	return p[0], nil
+	ret := p[0]
+	return &ret
 }
 
-func getIntParameter(r *http.Request, paramname string) (int, error) {
+func getIntParameter(r *http.Request, paramname string) (*int, error) {
 	p, ok := r.URL.Query()[paramname]
 	if !ok || len(p[0]) < 1 {
-		return 0, fmt.Errorf("missing parameter %s", paramname)
+		return nil, nil
 	}
 
 	i, err := strconv.Atoi(p[0])
 	if err != nil {
-		return 0, fmt.Errorf("invalid parameter %s=%q - %w", paramname, p, err)
+		return nil, fmt.Errorf("invalid parameter %s=%q - %w", paramname, p[0], err)
 	} else if i < 1 {
-		return 0, fmt.Errorf("invalid parameter %s: %q", paramname, p)
+		return nil, fmt.Errorf("invalid parameter %s: %q", paramname, p[0])
 	}
 
-	return i, nil
+	return &i, nil
 }
 
 // http://localhost:8080/screenshot?url=https://firefart.at&w=1024&h=768
 func (app *application) screenshot(r *http.Request) (string, []byte, error) {
-	url, err := getStringParameter(r, "url")
-	if err != nil {
-		return "", nil, err
+	url := getStringParameter(r, "url")
+	if url == nil {
+		return "", nil, fmt.Errorf("missing required parameter url")
 	}
 
+	// optional parameters start here
 	w, err := getIntParameter(r, "w")
 	if err != nil {
 		return "", nil, err
@@ -314,7 +323,9 @@ func (app *application) screenshot(r *http.Request) (string, []byte, error) {
 		return "", nil, err
 	}
 
-	content, err := app.toImage(r.Context(), url, w, h)
+	userAgentParam := getStringParameter(r, "useragent")
+
+	content, err := app.toImage(r.Context(), *url, w, h, userAgentParam)
 	if err != nil {
 		return "", nil, err
 	}
@@ -324,6 +335,7 @@ func (app *application) screenshot(r *http.Request) (string, []byte, error) {
 
 // http://localhost:8080/html2pdf?w=1024&h=768
 func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
+	// optional parameters start here
 	w, err := getIntParameter(r, "w")
 	if err != nil {
 		return "", nil, err
@@ -333,6 +345,8 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 	if err != nil {
 		return "", nil, err
 	}
+
+	userAgentParam := getStringParameter(r, "useragent")
 
 	tmpf, err := os.CreateTemp("", "pdf.*.html")
 	if err != nil {
@@ -358,7 +372,7 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 		return "", nil, fmt.Errorf("could not get temp file path: %w", err)
 	}
 
-	content, err := app.toPDF(r.Context(), path, w, h)
+	content, err := app.toPDF(r.Context(), path, w, h, userAgentParam)
 	if err != nil {
 		return "", nil, err
 	}
