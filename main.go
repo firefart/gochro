@@ -110,6 +110,7 @@ func (app *application) routes() http.Handler {
 	r.Use(app.recoverPanic)
 	r.HandleFunc("/screenshot", app.errorHandler(app.screenshot))
 	r.HandleFunc("/html2pdf", app.errorHandler(app.html2pdf))
+	r.HandleFunc("/html", app.errorHandler(app.html))
 	r.PathPrefix("/").HandlerFunc(app.catchAllHandler)
 	return r
 }
@@ -132,6 +133,10 @@ func (app *application) toImage(ctx context.Context, url string, w, h *int, user
 
 func (app *application) toPDF(ctx context.Context, url string, w, h *int, userAgent *string) ([]byte, error) {
 	return app.execChrome(ctx, "pdf", url, w, h, userAgent)
+}
+
+func (app *application) toHTML(ctx context.Context, url string, w, h *int, userAgent *string) ([]byte, error) {
+	return app.execChrome(ctx, "html", url, w, h, userAgent)
 }
 
 func (app *application) execChrome(ctxMain context.Context, action, url string, w, h *int, userAgent *string) ([]byte, error) {
@@ -174,6 +179,8 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		args = append(args, "--screenshot")
 	case "pdf":
 		args = append(args, "--print-to-pdf")
+	case "html":
+		args = append(args, "--dump-dom")
 	default:
 		return nil, fmt.Errorf("unknown action %q", action)
 	}
@@ -208,20 +215,25 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	log.Debugf("STDOUT: %s", out.String())
 	log.Debugf("STDERR: %s", stderr.String())
 
-	var outfile string
+	var content []byte
 
 	switch action {
 	case "screenshot":
-		outfile = path.Join(tmpdir, "screenshot.png")
+		outfile := path.Join(tmpdir, "screenshot.png")
+		content, err = os.ReadFile(outfile)
+		if err != nil {
+			return nil, fmt.Errorf("could not read temp file: %w", err)
+		}
 	case "pdf":
-		outfile = path.Join(tmpdir, "output.pdf")
+		outfile := path.Join(tmpdir, "output.pdf")
+		content, err = os.ReadFile(outfile)
+		if err != nil {
+			return nil, fmt.Errorf("could not read temp file: %w", err)
+		}
+	case "html":
+		content = out.Bytes()
 	default:
 		return nil, fmt.Errorf("unknown action %q", action)
-	}
-
-	content, err := os.ReadFile(outfile)
-	if err != nil {
-		return nil, fmt.Errorf("could not read temp file: %w", err)
 	}
 
 	killChromeProcessIfRunning(cmd)
@@ -378,4 +390,32 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 	}
 
 	return "application/pdf", content, nil
+}
+
+// http://localhost:8080/html?url=https://firefart.at&w=1024&h=768
+func (app *application) html(r *http.Request) (string, []byte, error) {
+	url := getStringParameter(r, "url")
+	if url == nil {
+		return "", nil, fmt.Errorf("missing required parameter url")
+	}
+
+	// optional parameters start here
+	w, err := getIntParameter(r, "w")
+	if err != nil {
+		return "", nil, err
+	}
+
+	h, err := getIntParameter(r, "h")
+	if err != nil {
+		return "", nil, err
+	}
+
+	userAgentParam := getStringParameter(r, "useragent")
+
+	content, err := app.toHTML(r.Context(), *url, w, h, userAgentParam)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return "text/plain", content, nil
 }
