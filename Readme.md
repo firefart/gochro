@@ -39,6 +39,12 @@ Content-Length: 119
 </html>
 ```
 
+Example as curl:
+
+```text
+curl -s -k -X 'POST' -o test.pdf --data-binary '<html><body><h1>test</h1></body></html>' 'http://127.0.0.1:8000/html2pdf'
+```
+
 ## Run server
 
 To run this image you should use the [seccomp profile](https://github.com/jessfraz/dotfiles/blob/master/etc/docker/seccomp/chrome.json) provided by [Jess Frazelle](https://github.com/jessfraz). The privileges on the host are needed for chromiums internal security sandbox. You can also deactivate the sandbox on chromium (would require changes in `main.go`) but that's a bad idea and puts your server at risk, so please use the seccomp profile instead.
