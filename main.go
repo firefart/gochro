@@ -151,6 +151,8 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		"--timeout=55000", // 55 secs, context timeout is 1 minute
 		"--disable-dev-shm-usage",
 		"--hide-scrollbars",
+		"--disable-crash-reporter",
+		"--block-new-web-contents",
 	}
 
 	if w != nil && *w > 0 && h != nil && *h > 0 {
