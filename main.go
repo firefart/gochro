@@ -113,6 +113,7 @@ func (app *application) routes() http.Handler {
 	r.Use(app.recoverPanic)
 	r.HandleFunc("/screenshot", app.errorHandler(app.screenshot))
 	r.HandleFunc("/html2pdf", app.errorHandler(app.html2pdf))
+	r.HandleFunc("/url2pdf", app.errorHandler(app.url2pdf))
 	r.HandleFunc("/html", app.errorHandler(app.html))
 	r.PathPrefix("/").HandlerFunc(app.catchAllHandler)
 	return r
@@ -388,6 +389,34 @@ func (app *application) html2pdf(r *http.Request) (string, []byte, error) {
 	}
 
 	content, err := app.toPDF(r.Context(), path, w, h, userAgentParam)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return "application/pdf", content, nil
+}
+
+// http://localhost:8080/url2pdf?w=1024&h=768&url=https://firefart.at
+func (app *application) url2pdf(r *http.Request) (string, []byte, error) {
+	url := getStringParameter(r, "url")
+	if url == nil {
+		return "", nil, fmt.Errorf("missing required parameter url")
+	}
+
+	// optional parameters start here
+	w, err := getIntParameter(r, "w")
+	if err != nil {
+		return "", nil, err
+	}
+
+	h, err := getIntParameter(r, "h")
+	if err != nil {
+		return "", nil, err
+	}
+
+	userAgentParam := getStringParameter(r, "useragent")
+
+	content, err := app.toPDF(r.Context(), *url, w, h, userAgentParam)
 	if err != nil {
 		return "", nil, err
 	}

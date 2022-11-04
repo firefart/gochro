@@ -14,7 +14,7 @@ This URL takes a Screenshot of [https://firefart.at](https://firefart.at) with a
 
 [http://localhost:8080/screenshot?url=https://firefart.at&w=1024&h=768](http://localhost:8080/screenshot?url=https://firefart.at&w=1024&h=768)
 
-## PDF
+## HTML 2 PDF
 
 Send a POST request with the HTML you want to convert in the Post body to the following url.
 
@@ -44,6 +44,12 @@ Example as curl:
 ```text
 curl -s -k -X 'POST' -o test.pdf --data-binary '<html><body><h1>test</h1></body></html>' 'http://127.0.0.1:8000/html2pdf'
 ```
+
+## URL 2 PDF
+
+Send a GET request to the following url to get the response as PDF.
+
+[http://localhost:8080/url2pdf?url=https://firefart.at&w=1024&h=768](http://localhost:8080/url2pdf?url=https://firefart.at&w=1024&h=768)
 
 ## Run server
 
