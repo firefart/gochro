@@ -1,5 +1,8 @@
 package main
 
+// shell switches:
+// https://source.chromium.org/chromium/chromium/src/+/main:headless/app/headless_shell_switches.cc
+
 import (
 	"bytes"
 	"context"
@@ -178,7 +181,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	case "screenshot":
 		args = append(args, "--screenshot")
 	case "pdf":
-		args = append(args, "--print-to-pdf")
+		args = append(args, "--print-to-pdf-no-header", "--print-to-pdf")
 	case "html":
 		args = append(args, "--dump-dom")
 	default:
