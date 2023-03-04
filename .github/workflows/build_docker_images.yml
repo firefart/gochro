@@ -44,4 +44,4 @@ jobs:
           push: true
           tags: |
             firefart/gochro:latest
-            ghcr.io/firefart/gochro/gochro:latest
+            ghcr.io/firefart/gochro:latest
