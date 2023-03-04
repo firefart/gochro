@@ -39,7 +39,7 @@ update:
 build:
 	go fmt ./...
 	go vet ./...
-	go build -o gochro
+	go build -o ${PROG}
 
 .PHONY: test
 test:
@@ -47,4 +47,4 @@ test:
 
 .PHONY: run
 run: build
-	 ./gochro -host 0.0.0.0:8000 -debug -ignore-cert-errors
+	 ./${PROG} -host 0.0.0.0:8000 -debug -ignore-cert-errors
