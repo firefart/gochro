@@ -148,7 +148,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 		"--headless",
 		"--disable-gpu",
 		"--disable-software-rasterizer",
-		"--timeout=55000", // 55 secs, context timeout is 1 minute
+		"--virtual-time-budget=55000", // 55 secs, context timeout is 1 minute
 		"--disable-dev-shm-usage",
 		"--hide-scrollbars",
 		"--disable-crash-reporter",
