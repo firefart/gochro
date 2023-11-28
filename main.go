@@ -145,10 +145,10 @@ func (app *application) toHTML(ctx context.Context, url string, w, h *int, userA
 
 func (app *application) execChrome(ctxMain context.Context, action, url string, w, h *int, userAgent *string) ([]byte, error) {
 	args := []string{
-		"--headless",
+		"--headless=new", // https://developer.chrome.com/articles/new-headless/
 		"--disable-gpu",
 		"--disable-software-rasterizer",
-		"--timeout=55000", // 55 secs, context timeout is 1 minute
+		"--virtual-time-budget=55000", // 55 secs, context timeout is 1 minute
 		"--disable-dev-shm-usage",
 		"--hide-scrollbars",
 		"--disable-crash-reporter",
@@ -184,7 +184,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	case "screenshot":
 		args = append(args, "--screenshot")
 	case "pdf":
-		args = append(args, "--print-to-pdf-no-header", "--print-to-pdf")
+		args = append(args, "--print-to-pdf", "--no-pdf-header-footer")
 	case "html":
 		args = append(args, "--dump-dom")
 	default:
