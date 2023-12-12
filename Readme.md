@@ -1,8 +1,6 @@
 # gochro
 
-[![Build Status](https://travis-ci.org/FireFart/gochro.svg?branch=master)](https://travis-ci.org/FireFart/gochro)
-
-gochro is a small docker image with chromium installed and a golang based webserver to interact wit it. It can be used to take screenshots of websites using chromium-headless and convert HTML pages to PDF.
+gochro is a small docker image with chromium installed and a golang based webserver to interact with it. It can be used to take screenshots of websites using chromium-headless and convert HTML pages to PDF.
 
 If errors occur the error will be logged to stdout and a non information leaking error message is presented to the user.
 
