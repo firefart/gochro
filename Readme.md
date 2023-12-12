@@ -4,7 +4,7 @@ gochro is a small docker image with chromium installed and a golang based webser
 
 If errors occur the error will be logged to stdout and a non information leaking error message is presented to the user.
 
-This project is currently used on [https://wpscan.io](https://wpscan.io) for taking website screenshots and to generate PDF reports.
+This project was used on [https://wpscan.io](https://wpscan.io) for taking website screenshots and to generate PDF reports.
 
 ## Screenshot
 
