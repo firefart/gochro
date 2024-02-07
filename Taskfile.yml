@@ -1,0 +1,40 @@
+version: "3"
+
+vars:
+  PROGRAM: gochro
+
+tasks:
+  update:
+    cmds:
+      - go get -u
+      - go mod tidy -v
+
+  build:
+    aliases: [default]
+    cmds:
+      - go fmt ./...
+      - go vet ./...
+      - go build -o {{.PROGRAM}}
+
+  test:
+    env:
+      CGO_ENABLED: 1 # required by -race
+    cmds:
+      - go test -race -cover ./...
+
+  run:
+    cmds:
+      - ./{{.PROGRAM}}} -debug -testmode -config config.json
+
+  lint:
+    cmds:
+      - golangci-lint run ./... --timeout=30m
+      - go mod tidy
+
+  lint-update:
+    cmds:
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b {{ .GOPATH }}/bin
+      - golangci-lint --version
+    vars:
+      GOPATH:
+        sh: go env GOPATH

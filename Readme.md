@@ -53,7 +53,7 @@ Send a GET request to the following url to get the response as PDF.
 
 To run this image you should use the [seccomp profile](https://github.com/jessfraz/dotfiles/blob/master/etc/docker/seccomp/chrome.json) provided by [Jess Frazelle](https://github.com/jessfraz). The privileges on the host are needed for chromiums internal security sandbox. You can also deactivate the sandbox on chromium (would require changes in `main.go`) but that's a bad idea and puts your server at risk, so please use the seccomp profile instead.
 
-I included all the necessary steps in the included Makefile to build and run everything. Be sure to use the --init switch to get rid of zombie processes of chromium.
+Be sure to use the --init switch to get rid of zombie processes of chromium.
 
 ### Command Line Options
 ```text
@@ -61,42 +61,6 @@ I included all the necessary steps in the included Makefile to build and run eve
 -debug                 Enables debug output. Default: false
 -ignore-cert-errors    Also fetch ressources from origins with untrusted certificates or cert errors.
 -proxy                 Use a proxy server to connect to the internet. Please use format IP:PORT without a protocol. Example: 1.2.3.4:3128
-```
-
-### Only build the webserver for non docker use
-
-The following command builds the webserver for non docker use inside the `build` directory
-
-```bash
-make all
-```
-
-### Only build docker image
-
-To only build the docker image run
-
-```bash
-make docker-update
-```
-
-This will download the seccomp profile, all needed base images and builds the `gochro:dev` tagged image.
-
-### Run the image
-
-To run the image in interactive mode (docker output will be connected to current terminal) run
-
-```bash
-make docker-run
-```
-
-This will also build the image before running it. This maps the internal port 8000 to your machine.
-
-### Run the image in deamon mode
-
-To run it in deamon mode use the following command. This will launch everything in the background. Be aware that the webserver is rerun on startup of the machine if you don't shut down the container manually.
-
-```bash
-make docker-run-daemon
 ```
 
 ### Use the docker hub image
