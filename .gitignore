@@ -28,3 +28,4 @@ config.json
 *.env
 chrome.json
 gochro
+dist/
