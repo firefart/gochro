@@ -79,10 +79,11 @@ func main() {
 		log.Debug("DEBUG mode enabled")
 	}
 
-	// print number of goroutines in debug mode
+	// continuously print number of goroutines in debug mode
 	if debugOutput {
 		go func() {
 			goRoutineTicker := time.NewTicker(3 * time.Second)
+			defer goRoutineTicker.Stop()
 			for range goRoutineTicker.C {
 				log.Debugf("number of goroutines: %d", runtime.NumGoroutine())
 			}
