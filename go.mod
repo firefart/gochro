@@ -1,6 +1,6 @@
 module github.com/FireFart/gochro
 
-go 1.23
+go 1.24
 
 require (
 	github.com/gorilla/handlers v1.5.2
