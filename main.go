@@ -255,7 +255,7 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	killChromeProcessIfRunning(cmd)
 
 	if debugOutput {
-		dirsToCheck := []string{tmpdirOutput, tmpdir, "/tmp"}
+		dirsToCheck := []string{os.TempDir(), tmpdirOutput, tmpdir}
 		for _, dir := range dirsToCheck {
 			entries, err := os.ReadDir(dir)
 			if err != nil {
