@@ -24,7 +24,7 @@ Example:
 
 ```text
 POST /html2pdf?w=1024&h=768 HTTP/1.1
-Host: localhost:8000
+Host: localhost:8080
 Content-Type: application/x-www-form-urlencoded
 Content-Length: 119
 
@@ -40,7 +40,7 @@ Content-Length: 119
 Example as curl:
 
 ```text
-curl -s -k -X 'POST' -o test.pdf --data-binary '<html><body><h1>test</h1></body></html>' 'http://127.0.0.1:8000/html2pdf'
+curl -s -k -X 'POST' -o test.pdf --data-binary '<html><body><h1>test</h1></body></html>' 'http://127.0.0.1:8080/html2pdf'
 ```
 
 ## URL 2 PDF
@@ -56,8 +56,9 @@ To run this image you should use the [seccomp profile](https://github.com/jessfr
 Be sure to use the --init switch to get rid of zombie processes of chromium.
 
 ### Command Line Options
+
 ```text
--host                  The host and port to listen of (refers to inside the container). Defaults to 0.0.0.0:8000
+-host                  The host and port to listen of (refers to inside the container). Defaults to 127.0.0.1:8080
 -debug                 Enables debug output. Default: false
 -ignore-cert-errors    Also fetch ressources from origins with untrusted certificates or cert errors.
 -proxy                 Use a proxy server to connect to the internet. Please use format IP:PORT without a protocol. Example: 1.2.3.4:3128
@@ -80,7 +81,7 @@ If you want to include this image in a docker-compose file you can use the follo
 Please note that the `0.0.0.0` in the command only applies to the network inside the docker container itself. If you want to access it from your local machine you need to add a port mapping.
 
 ```yml
-version: '3.7'
+version: "3.7"
 
 services:
   gochro:
@@ -89,7 +90,7 @@ services:
     container_name: gochro
     security_opt:
       - seccomp="chrome.json"
-    command: -host 0.0.0.0:8000
+    command: -host 0.0.0.0:8080
     networks:
       - gochronet
 

@@ -1,7 +1,7 @@
 package main
 
 // shell switches:
-// https://source.chromium.org/chromium/chromium/src/+/main:headless/app/headless_shell_switches.cc
+// https://source.chromium.org/chromium/chromium/src/+/main:headless/public/switches.h
 
 import (
 	"bytes"
@@ -66,6 +66,10 @@ func main() {
 	log.SetLevel(log.InfoLevel)
 	if debugOutput {
 		log.SetLevel(log.DebugLevel)
+	}
+
+	if _, err := os.Stat(chromiumPath); os.IsNotExist(err) {
+		log.Fatalf("chromium binary not found at %q, please install chromium", chromiumPath)
 	}
 
 	app := &application{}
@@ -195,26 +199,42 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 	// last parameter is the url
 	args = append(args, url)
 
-	tmpdir := path.Join(os.TempDir(), fmt.Sprintf("chrome_%s", randStringRunes(10))) // nolint:gomnd
-	err := os.Mkdir(tmpdir, os.ModePerm)
+	tmpdirOutput, err := os.MkdirTemp("", "chrome_output_*")
 	if err != nil {
-		return nil, fmt.Errorf("could not create dir %q: %w", tmpdir, err)
+		return nil, fmt.Errorf("could not create temp output dir: %w", err)
+	}
+	defer os.RemoveAll(tmpdirOutput)
+
+	tmpdir, err := os.MkdirTemp("", "chrome_tmp_*")
+	if err != nil {
+		return nil, fmt.Errorf("could not create temp dir: %w", err)
 	}
 	defer os.RemoveAll(tmpdir)
+
+	log.Debugf("Temp Dir Output: %s", tmpdirOutput)
+	log.Debugf("Temp Dir: %s", tmpdir)
 
 	ctx, cancel := context.WithTimeout(ctxMain, 1*time.Minute)
 	defer cancel()
 
 	log.Debugf("going to call chromium with the following args: %v", args)
+	log.Debugf("Environment Variables: %v", os.Environ())
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(ctx, chromiumPath, args...)
-	cmd.Dir = tmpdir
+	cmd.Dir = tmpdirOutput
+	// https://superuser.com/questions/1345618/what-is-the-chrome-command-line-argument-in-headless-no-sandbox-mode-that-pick
+	// this is needed as chromuim will create a bunch of temp files which are not cleaned up after closing
+	// by using our tempditory we can ensure that these files are cleaned up
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("TMPDIR=%s", tmpdir),
+		fmt.Sprintf("TMP=%s", tmpdir),
+		fmt.Sprintf("TEMP=%s", tmpdir),
+	)
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	err = cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		killChromeProcessIfRunning(cmd)
 		return nil, fmt.Errorf("could not execute command %w: %s", err, stderr.String())
 	}
@@ -226,13 +246,13 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 
 	switch action {
 	case "screenshot":
-		outfile := path.Join(tmpdir, "screenshot.png")
+		outfile := path.Join(tmpdirOutput, "screenshot.png")
 		content, err = os.ReadFile(outfile)
 		if err != nil {
 			return nil, fmt.Errorf("could not read temp file: %w", err)
 		}
 	case "pdf":
-		outfile := path.Join(tmpdir, "output.pdf")
+		outfile := path.Join(tmpdirOutput, "output.pdf")
 		content, err = os.ReadFile(outfile)
 		if err != nil {
 			return nil, fmt.Errorf("could not read temp file: %w", err)
@@ -245,6 +265,27 @@ func (app *application) execChrome(ctxMain context.Context, action, url string, 
 
 	killChromeProcessIfRunning(cmd)
 
+	if debugOutput {
+		dirsToCheck := []string{tmpdirOutput, tmpdir, "/tmp"}
+		for _, dir := range dirsToCheck {
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				log.Errorf("could not read temp directory %q: %v", dir, err)
+				continue
+			}
+
+			if len(entries) == 0 {
+				log.Printf("Temp directory %q is empty", dir)
+				continue
+			}
+
+			log.Printf("Temp directory %q contains the following files:", dir)
+			for _, entry := range entries {
+				log.Printf(" - %s", entry.Name())
+			}
+		}
+	}
+
 	return content, nil
 }
 
@@ -253,11 +294,11 @@ func killChromeProcessIfRunning(cmd *exec.Cmd) {
 		return
 	}
 	if err := cmd.Process.Release(); err != nil {
-		log.Error(err)
+		log.Debug(err)
 		return
 	}
 	if err := cmd.Process.Kill(); err != nil {
-		log.Error(err)
+		log.Debug(err)
 		return
 	}
 }

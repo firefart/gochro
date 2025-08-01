@@ -23,8 +23,14 @@ tasks:
       - go test -race -cover ./...
 
   run:
+    deps: [build]
     cmds:
-      - ./{{.PROGRAM}} -debug -testmode -config config.json
+      - ./{{.PROGRAM}} -debug
+
+  docker:
+    cmds:
+      - docker build -t {{.PROGRAM}} .
+      - docker run --rm -it -p 8080:8080 {{.PROGRAM}} -host 0.0.0.0:8080 -debug -disable-sandbox
 
   lint:
     cmds:
