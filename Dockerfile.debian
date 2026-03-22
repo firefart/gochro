@@ -1,0 +1,28 @@
+FROM golang:latest AS build-env
+WORKDIR /src
+ENV CGO_ENABLED=0
+COPY go.* /src/
+RUN go mod download
+COPY main.go .
+RUN go build -a -o gochro -ldflags="-s -w" -trimpath
+
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends chromium \
+    && ln -s /usr/bin/chromium /usr/bin/chromium-browser \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /app \
+    && adduser --disabled-password --gecos "" chrome \
+    && chown -R chrome:chrome /app
+
+USER chrome
+WORKDIR /app
+
+ENV CHROME_BIN=/usr/bin/chromium \
+    CHROME_PATH=/usr/lib/chromium/
+
+COPY --from=build-env /src/gochro .
+
+ENTRYPOINT [ "./gochro" ]
